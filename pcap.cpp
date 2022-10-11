@@ -44,14 +44,14 @@ size_t parse_pcap(const char8_t* file_path, vector<vector<string>>& pkt_info_vec
                 break;
         }
 
-        /* 暂时用，测试完了删除一下代码 */
-        if (!cur_pkt_info.empty()) {
-            for (auto iter: cur_pkt_info) {
-                cout << iter << '\t';
-            }
-            cout << endl;
-        }
-        /* ========================= */
+        // /* 暂时用，测试完了删除一下代码 */
+        // if (!cur_pkt_info.empty()) {
+        //     for (auto iter: cur_pkt_info) {
+        //         cout << iter << '\t';
+        //     }
+        //     cout << endl;
+        // }
+        // /* ========================= */
 
         free(buffer);
     }

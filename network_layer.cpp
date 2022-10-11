@@ -19,15 +19,31 @@ void parse_ipv4_pkt(char8_t *ipv4_pkt)
     p_ipv4_header->flags_frag_offset = (p_ipv4_header->flags_frag_offset << 8) | (p_ipv4_header->flags_frag_offset >> 8);
     p_ipv4_header->header_checksum = (p_ipv4_header->header_checksum << 8) | (p_ipv4_header->header_checksum >> 8);
 
+    vector<string> temp_vec;
+    string temp_src_ip, temp_dst_ip;
+    // src IP
+    hex2str(p_ipv4_header->src_ip_addr, sizeof(p_ipv4_header->src_ip_addr), temp_vec);
+    join(temp_vec, temp_src_ip, ".");
+    // Dst IP
+    hex2str(p_ipv4_header->dst_ip_addr, sizeof(p_ipv4_header->dst_ip_addr), temp_vec);
+    join(temp_vec, temp_dst_ip, ".");
+    // Encapsulated Protocol
+    string encap_protc;
+    // Encapsulated packet size
+    size_t encap_pkt_size = p_ipv4_header->total_len - ihl_byte;
+
     switch (p_ipv4_header->protocol_type)
     {
         case IP_PROTOCOL_ICMP:
+            encap_protc = "ICMP";
             parse_icmp_pkt(ipv4_pkt + ihl_byte);
             break;
         case IP_PROTOCOL_TCP:
+            encap_protc = "TCP";
             parse_tcp_pkt(ipv4_pkt + ihl_byte);
             break;
         case IP_PROTOCOL_UDP:
+            encap_protc = "UDP";
             parse_udp_pkt(ipv4_pkt + ihl_byte);
             break;
         default:

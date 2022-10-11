@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base_type.h"
+#include "general_funcs.h"
 #include "transport_layer.h"
 
 using std::vector;
