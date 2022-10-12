@@ -1,6 +1,6 @@
 #include "transport_layer.h"
 
-void parse_tcp_pkt(char8_t *tcp_pkt)
+string parse_tcp_pkt(char8_t *tcp_pkt)
 {
     // Get the Header Len field. If its value is greater than TCP_HEADER_LEN_MIN (5), the Options field is not NULL.
     uchar8_t hl;
@@ -25,12 +25,34 @@ void parse_tcp_pkt(char8_t *tcp_pkt)
     p_tcp_header->checksum = (p_tcp_header->checksum << 8) | (p_tcp_header->checksum >> 8);
     p_tcp_header->urg_ptr = (p_tcp_header->urg_ptr << 8) | (p_tcp_header->urg_ptr >> 8);
 
+    // Form the TCP description info, including src_port, dst_port, flags.
+    // Get the flags.
+    vector<string> flag_vec;
+    vector<uint16_t> candidate_flags = {TCP_FLAG_FIN, TCP_FLAG_SYN, TCP_FLAG_RST, TCP_FLAG_PSH, TCP_FLAG_ACK, 
+                                        TCP_FLAG_URG, TCP_FLAG_ECE, TCP_FLAG_CWR, TCP_FLAG_NOC};
+    vector<string> flag_names = {"FIN", "SYN", "RST", "PSH", "ACK", "URG", "ECE", "CWR", "NOC"};
+    uint16_t flag_mask = 0x0fff;
+    uint16_t cur_flags = p_tcp_header->hl_flags & flag_mask;
+    for (size_t i = 0; i < candidate_flags.size(); i++) {
+        if ((cur_flags & candidate_flags[i]) == candidate_flags[i]) {
+            flag_vec.emplace_back(flag_names[i]);
+        }
+    }
+    string flags_str;
+    join(flag_vec, flags_str, ",");
+
+    // Format the description info.
+    char8_t buffer[50];
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "%hu -> %hu [%s]", p_tcp_header->src_port, p_tcp_header->dst_port, flags_str.c_str());
+    string des_info(buffer);
+
     free(p_tcp_header);
 
-    return;
+    return des_info;
 }
 
-void parse_udp_pkt(char8_t *udp_pkt)
+string parse_udp_pkt(char8_t *udp_pkt)
 {
     PcapUDPHeader udp_header;
     memcpy(&udp_header, udp_pkt, sizeof(PcapUDPHeader));
@@ -40,5 +62,11 @@ void parse_udp_pkt(char8_t *udp_pkt)
     udp_header.len = (udp_header.len << 8) | (udp_header.len >> 8);
     udp_header.checksum = (udp_header.checksum << 8) | (udp_header.checksum >> 8);
 
-    return;
+    // Format the description info.
+    char8_t buffer[50];
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "%hu -> %hu", udp_header.src_port, udp_header.dst_port);
+    string des_info(buffer);
+
+    return des_info;
 }

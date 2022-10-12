@@ -11,13 +11,13 @@ vector<string> parse_ethernet_pkt(char8_t *ethernet_pkt)
     switch (eth_header.ether_type)
     {
         case ETHERTYPE_IPV4:
-            parse_ipv4_pkt(ethernet_pkt + sizeof(PcapEthernetHeader));
+            ether_pkt_info = parse_ipv4_pkt(ethernet_pkt + sizeof(PcapEthernetHeader));
             break;
         case ETHERTYPE_ARP:
             ether_pkt_info = parse_arp_pkt(ethernet_pkt + sizeof(PcapEthernetHeader));
             break;
         case ETHERTYPE_VLAN:
-            parse_vlan_pkt(ethernet_pkt + sizeof(PcapEthernetHeader));
+            ether_pkt_info = parse_vlan_pkt(ethernet_pkt + sizeof(PcapEthernetHeader));
             break;
         case ETHERTYPE_IPV6:
             break;
@@ -82,7 +82,7 @@ vector<string> parse_arp_pkt(char8_t *arp_pkt)
     return arp_info_vec;
 }
 
-void parse_vlan_pkt(char8_t *vlan_pkt)
+vector<string> parse_vlan_pkt(char8_t *vlan_pkt)
 {
     PcapVlanHeader vlan_header;
     memcpy(&vlan_header, vlan_pkt, sizeof(PcapVlanHeader));
@@ -90,15 +90,16 @@ void parse_vlan_pkt(char8_t *vlan_pkt)
     vlan_header.tag_control_info = (vlan_header.tag_control_info << 8) | (vlan_header.tag_control_info >> 8);
     vlan_header.protocol_type = (vlan_header.protocol_type << 8) | (vlan_header.protocol_type >> 8);
 
+    vector<string> vlan_pkt_info;
     switch (vlan_header.protocol_type)
     {
         case ETHERTYPE_IPV4:
-            parse_ipv4_pkt(vlan_pkt + sizeof(PcapVlanHeader));
+            vlan_pkt_info = parse_ipv4_pkt(vlan_pkt + sizeof(PcapVlanHeader));
             break;
         case ETHERTYPE_IPV6:
             break;
         default:
             break;
     }
-    return;
+    return vlan_pkt_info;
 }

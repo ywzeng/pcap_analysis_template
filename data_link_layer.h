@@ -56,6 +56,6 @@ vector<string> parse_ethernet_pkt(char8_t *ethernet_pkt);
 
 vector<string> parse_arp_pkt(char8_t *arp_pkt);
 
-void parse_vlan_pkt(char8_t *vlan_pkt);
+vector<string> parse_vlan_pkt(char8_t *vlan_pkt);
 
 #endif
