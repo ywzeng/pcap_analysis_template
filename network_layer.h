@@ -22,6 +22,7 @@ using std::string;
 #define IP_PROTOCOL_ICMP 0x01
 #define IP_PROTOCOL_TCP  0x06
 #define IP_PROTOCOL_UDP  0x11
+#define IP_PROTOCOL_GRE  0x2f
 
 // IPv4 packet header. Mostly 20 bytes with no Options field. 
 typedef struct PcapIPv4Header {
@@ -61,8 +62,33 @@ typedef struct PcapICMPHeader {
     uchar8_t rst_header[4];         // Contents vary based on the Type and Code values.
 } PcapICMPHeader;
 
-void parse_ipv4_pkt(char8_t *ipv4_pkt);
+// GRE encapsulated protocol numbers.
+#define GRE_PROTOCOL_IPV4 0x0800
+#define GRE_PROTOCOL_IPV6 0x86dd
 
-void parse_icmp_pkt(char8_t *icmp_pkt);
+// GRE flags.
+#define GRE_FLAG_CHECKSUM  0x80
+#define GRE_FLAG_ROUTING   0x40
+#define GRE_FLAG_KEY       0x20
+#define GRE_FLAG_SEQUENCE  0x10
+#define GRE_FLAG_STRICT    0x08
+#define GRE_FLAG_RECURSION 0x07
+
+// GRE tunnel packet header.
+typedef struct PcapGREHeader {
+    uint16_t flags_version;         // The higher 5 bits are C, R, K, S, s.
+                                    // The next 3 bits are recursion control bits.
+                                    // The following 5 bits are reserved as 0.
+                                    // The last 3 bits are GRE version number. Mostly set to 0.
+    uint16_t protocol_type;         // The same as the Ethernet encapsulated protocol (e.g., IPv4 is 0x8000, IPv6 is 0x86dd).
+    uchar8_t options[];             // The number of optional fields is depends on the flags. 
+                                    // More details refers to https://en.wikipedia.org/wiki/Generic_Routing_Encapsulation.
+} PcapGREHeader;
+
+vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt);
+
+string parse_icmp_pkt(char8_t *icmp_pkt);
+
+void parse_gre_pkt(char8_t *gre_pkt);
 
 #endif

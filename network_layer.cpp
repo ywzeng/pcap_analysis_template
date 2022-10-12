@@ -1,6 +1,6 @@
 #include "network_layer.h"
 
-void parse_ipv4_pkt(char8_t *ipv4_pkt)
+vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt)
 {
     // Get the IHL field. If its value is greater than IPV4_IHL_MIN (5), the Options field is not NULL.
     uchar8_t ihl_val;
@@ -22,42 +22,49 @@ void parse_ipv4_pkt(char8_t *ipv4_pkt)
     vector<string> temp_vec;
     string temp_src_ip, temp_dst_ip;
     // src IP
-    hex2str(p_ipv4_header->src_ip_addr, sizeof(p_ipv4_header->src_ip_addr), temp_vec);
+    hex2str(p_ipv4_header->src_ip_addr, sizeof(p_ipv4_header->src_ip_addr), temp_vec, true);
     join(temp_vec, temp_src_ip, ".");
     // Dst IP
-    hex2str(p_ipv4_header->dst_ip_addr, sizeof(p_ipv4_header->dst_ip_addr), temp_vec);
+    hex2str(p_ipv4_header->dst_ip_addr, sizeof(p_ipv4_header->dst_ip_addr), temp_vec, true);
     join(temp_vec, temp_dst_ip, ".");
     // Encapsulated Protocol
     string encap_protc;
     // Encapsulated packet size
     size_t encap_pkt_size = p_ipv4_header->total_len - ihl_byte;
+    // Encapsulated protocol description
+    string encap_des_info;
 
     switch (p_ipv4_header->protocol_type)
     {
         case IP_PROTOCOL_ICMP:
             encap_protc = "ICMP";
-            parse_icmp_pkt(ipv4_pkt + ihl_byte);
+            encap_des_info = parse_icmp_pkt(ipv4_pkt + ihl_byte);
             break;
         case IP_PROTOCOL_TCP:
             encap_protc = "TCP";
-            parse_tcp_pkt(ipv4_pkt + ihl_byte);
+            encap_des_info = parse_tcp_pkt(ipv4_pkt + ihl_byte);
             break;
         case IP_PROTOCOL_UDP:
             encap_protc = "UDP";
-            parse_udp_pkt(ipv4_pkt + ihl_byte);
+            encap_des_info = parse_udp_pkt(ipv4_pkt + ihl_byte);
             break;
         default:
             break;
     }
 
-
+    vector<string> ipv4_info_vec;
+    ipv4_info_vec.emplace_back(temp_src_ip);
+    ipv4_info_vec.emplace_back(temp_dst_ip);
+    ipv4_info_vec.emplace_back(encap_protc);
+    ipv4_info_vec.emplace_back(std::to_string(encap_pkt_size));
+    ipv4_info_vec.emplace_back(encap_des_info);
 
     free(p_ipv4_header);
 
-    return;
+    return ipv4_info_vec;
 }
 
-void parse_icmp_pkt(char8_t *icmp_pkt)
+string parse_icmp_pkt(char8_t *icmp_pkt)
 {
     PcapICMPHeader icmp_header;
     memcpy(&icmp_header, icmp_pkt, sizeof(PcapICMPHeader));
@@ -69,32 +76,48 @@ void parse_icmp_pkt(char8_t *icmp_pkt)
     // Different Type/Code pairs (namely temp_tc) correspond to different last 4-byte formats.
     // The further ICMP analysis needs more details on Type/Code tuple.
 
-    // Extract ICMP packet data
+    // Form the ICMP description info.
+    string des_info;
     switch (type_code)
     {
         case ICMP_TC_ECHO_REPLY:
+            des_info = "Echo (ping) reply";
             break;
         case ICMP_TC_ECHO_REQUEST:
+            des_info = "Echo (ping) request";
             break;
         case ICMP_TC_DES_NET_UNREACH:
+            des_info = "Destination unreachable (Network unreachable)";
             break;
         case ICMP_TC_DES_HOST_UNREACH:
+            des_info = "Destination unreachable (Host unreachable)";
             break;
         case ICMP_TC_DES_PROC_UNREACH:
+            des_info = "Destination unreachable (Protocol unreachable)";
             break;
         case ICMP_TC_DES_PORT_UNREACH:
+            des_info = "Destination unreachable (Port unreachable)";
             break;
         case ICMP_TC_DES_NET_UNKNOWN:
+            des_info = "Destination unreachable (Destination network unknown)";
             break;
         case ICMP_TC_DES_HOST_UNKNOWN:
+            des_info = "Destination unreachable (Destination host unknown)";
             break;
         case ICMP_TC_TIME_EXCEED_TTL:
+            des_info = "Time exceeded (TTL expired in transit)";
             break;
         case ICMP_TC_TIME_EXCEED_FRAG:
+            des_info = "Time exceeded (Fragment reassembly time exceeded)";
             break;
         default:
             break;
     }
 
-    return;
+    return des_info;
+}
+
+void parse_gre_pkt(char8_t *gre_pkt)
+{
+    
 }
