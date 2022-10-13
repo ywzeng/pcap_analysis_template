@@ -62,17 +62,24 @@ typedef struct PcapICMPHeader {
     uchar8_t rst_header[4];         // Contents vary based on the Type and Code values.
 } PcapICMPHeader;
 
-// GRE encapsulated protocol numbers.
-#define GRE_PROTOCOL_IPV4 0x0800
-#define GRE_PROTOCOL_IPV6 0x86dd
-
 // GRE flags.
-#define GRE_FLAG_CHECKSUM  0x80
-#define GRE_FLAG_ROUTING   0x40
-#define GRE_FLAG_KEY       0x20
-#define GRE_FLAG_SEQUENCE  0x10
-#define GRE_FLAG_STRICT    0x08
-#define GRE_FLAG_RECURSION 0x07
+#define GRE_FLAG_CHECKSUM  0x8000
+#define GRE_FLAG_ROUTING   0x4000
+#define GRE_FLAG_KEY       0x2000
+#define GRE_FLAG_SEQNUM    0x1000
+#define GRE_FLAG_STRICT    0x0800
+#define GRE_FLAG_RECURSION 0x0700
+
+// GRE encapsulated protocol numbers.
+#define GRE_PROTOCOL_IPV4  0x0800
+#define GRE_PROTOCOL_IPV6  0x86dd
+
+// Optional field size in byte.
+#define GRE_OP_CHECKSUM_SIZE 2
+#define GRE_OP_OFFSET_SIZE   2
+#define GRE_OP_KEY_SIZE      4
+#define GRE_OP_SEQNUM_SIZE   4
+#define GRE_OP_ROUTING_SIZE  4
 
 // GRE tunnel packet header.
 typedef struct PcapGREHeader {
@@ -89,6 +96,6 @@ vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt);
 
 string parse_icmp_pkt(char8_t *icmp_pkt);
 
-void parse_gre_pkt(char8_t *gre_pkt);
+vector<string> parse_gre_pkt(char8_t *gre_pkt);
 
 #endif
