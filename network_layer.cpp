@@ -20,9 +20,9 @@ vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt)
     p_ipv4_header->header_checksum = (p_ipv4_header->header_checksum << 8) | (p_ipv4_header->header_checksum >> 8);
 
     // Used to aggregate the IPv4 info, including src_ip, dst_ip, encap_protocol, encap_pkt_size, encap_des_info.
-    vector<string> ipv4_info_vec;
+    vector<string> ipv4_info_vec(5);
 
-    vector<string> temp_vec;
+    vector<string> temp_vec;        // Temporarily usded to store labels.
     string temp_src_ip, temp_dst_ip;
     // src IP
     hex2str(p_ipv4_header->src_ip_addr, sizeof(p_ipv4_header->src_ip_addr), temp_vec, true);
@@ -43,6 +43,9 @@ vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt)
             encap_protc = "ICMP";
             encap_des_info = parse_icmp_pkt(ipv4_pkt + ihl_byte);
             break;
+        case IP_PROTOCOL_IGMP:
+            ipv4_info_vec = parse_igmp_pkt(ipv4_pkt + ihl_byte, encap_pkt_size);
+            break;
         case IP_PROTOCOL_TCP:
             encap_protc = "TCP";
             encap_des_info = parse_tcp_pkt(ipv4_pkt + ihl_byte);
@@ -58,13 +61,21 @@ vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt)
             break;
     }
 
-    // The ipv4_info has been aggregated 
-    if (ipv4_info_vec.empty())  {
-        ipv4_info_vec.emplace_back(temp_src_ip);
-        ipv4_info_vec.emplace_back(temp_dst_ip);
-        ipv4_info_vec.emplace_back(encap_protc);
-        ipv4_info_vec.emplace_back(std::to_string(encap_pkt_size));
-        ipv4_info_vec.emplace_back(encap_des_info);
+    // Ignore the pre-saved data.
+    if (ipv4_info_vec[0].empty()) {
+        ipv4_info_vec[0] = temp_src_ip;
+    }
+    if (ipv4_info_vec[1].empty()) {
+        ipv4_info_vec[1] = temp_dst_ip;
+    }
+    if (ipv4_info_vec[2].empty()) {
+        ipv4_info_vec[2] = encap_protc;
+    }
+    if (ipv4_info_vec[3].empty()) {
+        ipv4_info_vec[3] = std::to_string(encap_pkt_size);
+    }
+    if (ipv4_info_vec[4].empty()) {
+        ipv4_info_vec[4] = encap_des_info;
     }
 
     free(p_ipv4_header);
@@ -179,4 +190,87 @@ vector<string> parse_gre_pkt(char8_t *gre_pkt)
     free(p_gre_header);
 
     return gre_pkt_info;
+}
+
+vector<string> parse_igmp_pkt(char8_t *igmp_pkt, size_t pkt_size)
+{
+    // Check the version of the current IGMP protocol.
+    enum igmp_version {v1 = 1, v2, v3} cur_version;
+    // The version of IGMP can be distinguished by the first two bytes.
+    uchar8_t first_byte, second_byte;
+    memcpy(&first_byte, igmp_pkt, sizeof(uchar8_t));
+    memcpy(&second_byte, igmp_pkt + sizeof(uchar8_t), sizeof(uchar8_t));
+    // IGMPv1 and IGMPv2 have the constant packet size. IGMPv3 has variable packet size.
+    if (pkt_size != sizeof(PcapIGMPv1Header)) {
+        cur_version = v3;
+    } else {
+        // The report modes of the first byte of both IGMPv1 and IGMPv2 are different.
+        if (first_byte == IGMP_TYPE_MEM_REPORT_V1) {
+            cur_version = v1;
+        } else if (first_byte == IGMP_TYPE_MEM_REPORT_V2) {
+            cur_version = v2;
+        } else {
+            // The second byte of IGMPv1 is 0x00 in the non-report mode.
+            if (second_byte == 0x00) {
+                cur_version = v1;
+            } else {
+                cur_version = v2;
+            }
+        }
+    }
+
+    string des_info;
+    string protocol;
+
+    if (cur_version == v1) {
+        PcapIGMPv1Header igmpv1_header;
+        memcpy(&igmpv1_header, igmp_pkt, sizeof(PcapIGMPv1Header));
+
+        if (igmpv1_header.version_type == IGMP_TYPE_MEM_QUERY) {
+            des_info = "Membership Query";
+        } else if (igmpv1_header.version_type == IGMP_TYPE_MEM_REPORT_V1) {
+            des_info = "Membership Report";
+        }
+        protocol = "IGMPv1";
+    } else if (cur_version == v2) {
+        PcapIGMPv2Header igmpv2_header;
+        memcpy(&igmpv2_header, igmp_pkt, sizeof(PcapIGMPv2Header));
+
+        if (igmpv2_header.type == IGMP_TYPE_MEM_QUERY) {
+            des_info = "Membership Query";
+        } else if (igmpv2_header.type == IGMP_TYPE_MEM_REPORT_V2) {
+            des_info = "Membership Report";
+        }
+        protocol = "IGMPv2";
+    } else {
+        // IGMPv3 query or report?
+        if (first_byte == IGMP_TYPE_MEM_QUERY) {
+            PcapIGMPv3QueryHeader *p_igmpv3_query_header = nullptr;
+            p_igmpv3_query_header = (PcapIGMPv3QueryHeader*)malloc(pkt_size);
+
+            // Modify the byte order.
+            p_igmpv3_query_header->checksum = (p_igmpv3_query_header->checksum << 8) | (p_igmpv3_query_header->checksum >> 8);
+            p_igmpv3_query_header->src_num = (p_igmpv3_query_header->src_num << 8) | (p_igmpv3_query_header->src_num >> 8);
+
+            des_info = "Membership Query";
+
+            free(p_igmpv3_query_header);
+        } else {
+            PcapIGMPv3ReportHeader *p_igmpv3_report_header = nullptr;
+            p_igmpv3_report_header = (PcapIGMPv3ReportHeader*)malloc(pkt_size);
+
+            // Modify the byte order.
+            p_igmpv3_report_header->checksum = (p_igmpv3_report_header->checksum << 8) | (p_igmpv3_report_header->checksum >> 8);
+            p_igmpv3_report_header->group_record_num = (p_igmpv3_report_header->group_record_num << 8) | (p_igmpv3_report_header->group_record_num >> 8);
+            
+            des_info = "Membership Report";
+
+            free(p_igmpv3_report_header);
+        }
+        
+        protocol = "IGMPv3";
+    }
+
+    vector<string> igmp_info_vec = {"", "", protocol, "", des_info};
+    return igmp_info_vec;
 }

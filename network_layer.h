@@ -20,6 +20,7 @@ using std::string;
 
 // IP protocol numbers.
 #define IP_PROTOCOL_ICMP 0x01
+#define IP_PROTOCOL_IGMP 0x02
 #define IP_PROTOCOL_TCP  0x06
 #define IP_PROTOCOL_UDP  0x11
 #define IP_PROTOCOL_GRE  0x2f
@@ -92,10 +93,62 @@ typedef struct PcapGREHeader {
                                     // More details refers to https://en.wikipedia.org/wiki/Generic_Routing_Encapsulation.
 } PcapGREHeader;
 
+// IGMP message type values.
+#define IGMP_TYPE_MEM_QUERY     0x11
+#define IGMP_TYPE_MEM_REPORT_V1 0x12
+#define IGMP_TYPE_MEM_REPORT_V2 0x16
+#define IGMP_TYPE_MEM_REPORT_V3 0x22
+#define IGMP_TYPE_LEAVE_GROUP   0x17
+
+// IGMPv1 packet. 8 bytes.
+typedef struct PcapIGMPv1Header {
+    uchar8_t version_type;          // The higher 4-bit indicates the version, and the lower 4-bit indicates the type.
+    uchar8_t unused;                // Unused field, zeroed when sent, ignored when received.
+    uint16_t checksum;
+    uchar8_t group_addr[4];
+} PcapIGMPv1Header;
+
+// IGMPv2 packet. 8 bytes.
+typedef struct PcapIGMPv2Header {
+    uchar8_t type;
+    uchar8_t max_resp_time;
+    uint16_t checksum;
+    uchar8_t group_addr[4];
+} PcapIGMPv2Header;
+
+// IGMPv3 query packet.
+typedef struct PcapIGMPv3QueryHeader {
+    uchar8_t type;
+    uchar8_t max_resp_code;
+    uint16_t checksum;
+    uchar8_t group_addr[4];         // The multicast address being queried when sending a Group-specific or Group-and-source-specific query.
+                                    // Zeroed when sending a General query.
+    uchar8_t resv_sqrv;             // The higher 4 bits are reserved as 0.
+                                    // The next 1 bit S indicates whether the normal timer updates are suppressed.
+                                    // The last 3-bit is the Querier's Robustness Variable.
+    uchar8_t qqic;
+    uint16_t src_num;               // The number of arc addresses present in the query.
+    uchar8_t src_addrs[];           // The number of unicast address depends on the src_num value.
+                                    // Each src_addr occupies 32 bits (4 bytes).
+} PcapIGMPv3QueryHeader;
+
+// IGMPv3 report packet.
+typedef struct PcapIGMPv3ReportHeader {
+    uchar8_t type;
+    uchar8_t resv_8bit;
+    uint16_t checksum;
+    uint16_t resv_16bit;
+    uint16_t group_record_num;      // The number of group records in the report.
+    uchar8_t group_records[];       // The number of group records depends on the group_record_num value.
+                                    // The specific data within each group record are variable as well.
+} PcapIGMPv3ReportHeader;
+
 vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt);
 
 string parse_icmp_pkt(char8_t *icmp_pkt);
 
 vector<string> parse_gre_pkt(char8_t *gre_pkt);
+
+vector<string> parse_igmp_pkt(char8_t *igmp_pkt, size_t pkt_size);
 
 #endif
