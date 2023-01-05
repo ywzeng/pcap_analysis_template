@@ -12,7 +12,7 @@ typedef unsigned int uint32_t;
     typedef unsigned long long uint64_t;
 #elif __linux__
     typedef long int64_t;
-    typedef unsigned long int64_t;
+    typedef unsigned long uint64_t;
 #endif
 
 #endif
