@@ -8,7 +8,8 @@
 #include <vector>
 
 #include "base_type.h"
-#include "network_layer.h"
+#include "general_funcs.h"
+#include "application_layer.h"
 
 using std::vector;
 using std::string;
@@ -28,6 +29,13 @@ using std::string;
 #define TCP_FLAG_CWR 0x0080
 #define TCP_FLAG_NOC 0x0100
 
+// Mapping relationship between the upper layer protocol and the destination port.
+#define PORT_DNS  0x0035
+#define PORT_HTTP 0x0050
+#define PORT_QUIC 0x01bb
+#define PORT_SSDP 0x076c
+
+// TCP pcaket header. 20 bytes without options-filed.
 typedef struct PcapTCPHeader {
     uint16_t src_port;
     uint16_t dst_port;
@@ -43,10 +51,11 @@ typedef struct PcapTCPHeader {
                             // Note that the size of Options field must be an integer multiple of 32-bit (4-byte).
 } PcapTCPHeader;
 
+// UDP packet header. 8 bytes.
 typedef struct PcapUDPHeader {
     uint16_t src_port;
     uint16_t dst_port;
-    uint16_t len;                           // The length in bytes of the UDP header and data.
+    uint16_t len;           // The length in bytes of the UDP header and data.
     uint16_t checksum;
 } PcapUDPHeader;
 

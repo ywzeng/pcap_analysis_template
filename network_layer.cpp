@@ -14,10 +14,10 @@ vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt)
     memcpy(p_ipv4_header, ipv4_pkt, ihl_byte);
 
     // Modify the byte order.
-    p_ipv4_header->total_len = (p_ipv4_header->total_len << 8) | (p_ipv4_header->total_len >> 8);
-    p_ipv4_header->identification = (p_ipv4_header->identification << 8) | (p_ipv4_header->identification >> 8);
-    p_ipv4_header->flags_frag_offset = (p_ipv4_header->flags_frag_offset << 8) | (p_ipv4_header->flags_frag_offset >> 8);
-    p_ipv4_header->header_checksum = (p_ipv4_header->header_checksum << 8) | (p_ipv4_header->header_checksum >> 8);
+    p_ipv4_header->total_len = SWAP16(p_ipv4_header->total_len);
+    p_ipv4_header->identification = SWAP16(p_ipv4_header->identification);
+    p_ipv4_header->flags_frag_offset = SWAP16(p_ipv4_header->flags_frag_offset);
+    p_ipv4_header->header_checksum = SWAP16(p_ipv4_header->header_checksum);
 
     // Used to aggregate the IPv4 info, including src_ip, dst_ip, encap_protocol, encap_pkt_size, encap_des_info.
     vector<string> ipv4_info_vec(5);
@@ -79,6 +79,7 @@ vector<string> parse_ipv4_pkt(char8_t *ipv4_pkt)
     }
 
     free(p_ipv4_header);
+    p_ipv4_header = nullptr;
 
     return ipv4_info_vec;
 }
@@ -88,7 +89,7 @@ string parse_icmp_pkt(char8_t *icmp_pkt)
     PcapICMPHeader icmp_header;
     memcpy(&icmp_header, icmp_pkt, sizeof(PcapICMPHeader));
     // Modify the byte order.
-    icmp_header.checksum = (icmp_header.checksum << 8) | (icmp_header.checksum >> 8);
+    icmp_header.checksum = SWAP16(icmp_header.checksum);
 
     uint16_t type_code = ((uint16_t)icmp_header.type << 8) | icmp_header.code;
     
@@ -141,7 +142,7 @@ vector<string> parse_gre_pkt(char8_t *gre_pkt)
     uint16_t flag_mask = 0xf800;
     uint16_t cur_flags;
     memcpy(&cur_flags, gre_pkt, sizeof(uint16_t));
-    cur_flags = (cur_flags << 8) | (cur_flags >> 8);        // Modify the byte order.
+    cur_flags = SWAP16(cur_flags);        // Modify the byte order.
     cur_flags = cur_flags & flag_mask;
     
     size_t cur_op_size = 0;
@@ -169,8 +170,8 @@ vector<string> parse_gre_pkt(char8_t *gre_pkt)
     p_gre_header = (PcapGREHeader*)malloc(gre_header_size);
     memcpy(p_gre_header, gre_pkt, gre_header_size);
     // Modify the byte order.
-    p_gre_header->flags_version = (p_gre_header->flags_version << 8) | (p_gre_header->flags_version >> 8);
-    p_gre_header->protocol_type = (p_gre_header->protocol_type << 8) | (p_gre_header->protocol_type >> 8);
+    p_gre_header->flags_version = SWAP16(p_gre_header->flags_version);
+    p_gre_header->protocol_type = SWAP16(p_gre_header->protocol_type);
 
     // Different flag combination correspond to different options.
     // The further GRE analysis is left as TODO.
@@ -188,6 +189,7 @@ vector<string> parse_gre_pkt(char8_t *gre_pkt)
     }
 
     free(p_gre_header);
+    p_gre_header = nullptr;
 
     return gre_pkt_info;
 }
@@ -249,23 +251,25 @@ vector<string> parse_igmp_pkt(char8_t *igmp_pkt, size_t pkt_size)
             p_igmpv3_query_header = (PcapIGMPv3QueryHeader*)malloc(pkt_size);
 
             // Modify the byte order.
-            p_igmpv3_query_header->checksum = (p_igmpv3_query_header->checksum << 8) | (p_igmpv3_query_header->checksum >> 8);
-            p_igmpv3_query_header->src_num = (p_igmpv3_query_header->src_num << 8) | (p_igmpv3_query_header->src_num >> 8);
+            p_igmpv3_query_header->checksum = SWAP16(p_igmpv3_query_header->checksum);
+            p_igmpv3_query_header->src_num = SWAP16(p_igmpv3_query_header->src_num);
 
             des_info = "Membership Query";
 
             free(p_igmpv3_query_header);
+            p_igmpv3_query_header = nullptr;
         } else {
             PcapIGMPv3ReportHeader *p_igmpv3_report_header = nullptr;
             p_igmpv3_report_header = (PcapIGMPv3ReportHeader*)malloc(pkt_size);
 
             // Modify the byte order.
-            p_igmpv3_report_header->checksum = (p_igmpv3_report_header->checksum << 8) | (p_igmpv3_report_header->checksum >> 8);
-            p_igmpv3_report_header->group_record_num = (p_igmpv3_report_header->group_record_num << 8) | (p_igmpv3_report_header->group_record_num >> 8);
+            p_igmpv3_report_header->checksum = SWAP16(p_igmpv3_report_header->checksum);
+            p_igmpv3_report_header->group_record_num = SWAP16(p_igmpv3_report_header->group_record_num);
             
             des_info = "Membership Report";
 
             free(p_igmpv3_report_header);
+            p_igmpv3_report_header = nullptr;
         }
         
         protocol = "IGMPv3";

@@ -14,16 +14,14 @@ string parse_tcp_pkt(char8_t *tcp_pkt)
     memcpy(p_tcp_header, tcp_pkt, hl_byte);
 
     // Modify the byte order.
-    p_tcp_header->src_port = (p_tcp_header->src_port << 8) | (p_tcp_header->src_port >> 8);
-    p_tcp_header->dst_port = (p_tcp_header->dst_port << 8) | (p_tcp_header->dst_port >> 8);
-    p_tcp_header->seq_num = (p_tcp_header->seq_num << 24) | ((p_tcp_header->seq_num & 0x0000ff00) << 8) | 
-                            ((p_tcp_header->seq_num & 0x00ff0000) >> 8) | (p_tcp_header->seq_num >> 24);
-    p_tcp_header->ack_num = (p_tcp_header->ack_num << 24) | ((p_tcp_header->ack_num & 0x0000ff00) << 8) | 
-                            ((p_tcp_header->ack_num & 0x00ff0000) >> 8) | (p_tcp_header->ack_num >> 24);
-    p_tcp_header->hl_flags = (p_tcp_header->hl_flags << 8) | (p_tcp_header->hl_flags >> 8);
-    p_tcp_header->win_size = (p_tcp_header->win_size << 8) | (p_tcp_header->win_size >> 8);
-    p_tcp_header->checksum = (p_tcp_header->checksum << 8) | (p_tcp_header->checksum >> 8);
-    p_tcp_header->urg_ptr = (p_tcp_header->urg_ptr << 8) | (p_tcp_header->urg_ptr >> 8);
+    p_tcp_header->src_port = SWAP16(p_tcp_header->src_port);
+    p_tcp_header->dst_port = SWAP16(p_tcp_header->dst_port);
+    p_tcp_header->seq_num = SWAP32(p_tcp_header->seq_num);
+    p_tcp_header->ack_num = SWAP32(p_tcp_header->ack_num);
+    p_tcp_header->hl_flags = SWAP16(p_tcp_header->hl_flags);
+    p_tcp_header->win_size = SWAP16(p_tcp_header->win_size);
+    p_tcp_header->checksum = SWAP16(p_tcp_header->checksum);
+    p_tcp_header->urg_ptr = SWAP16(p_tcp_header->urg_ptr);
 
     // Form the TCP description info, including src_port, dst_port, flags.
     // Get the flags.
@@ -48,6 +46,7 @@ string parse_tcp_pkt(char8_t *tcp_pkt)
     string des_info(buffer);
 
     free(p_tcp_header);
+    p_tcp_header = nullptr;
 
     return des_info;
 }
@@ -57,10 +56,30 @@ string parse_udp_pkt(char8_t *udp_pkt)
     PcapUDPHeader udp_header;
     memcpy(&udp_header, udp_pkt, sizeof(PcapUDPHeader));
     // Modify the byte order.
-    udp_header.src_port = (udp_header.src_port << 8) | (udp_header.src_port >> 8);
-    udp_header.dst_port = (udp_header.dst_port << 8) | (udp_header.dst_port >> 8);
-    udp_header.len = (udp_header.len << 8) | (udp_header.len >> 8);
-    udp_header.checksum = (udp_header.checksum << 8) | (udp_header.checksum >> 8);
+    udp_header.src_port = SWAP16(udp_header.src_port);
+    udp_header.dst_port = SWAP16(udp_header.dst_port);
+    udp_header.len = SWAP16(udp_header.len);
+    udp_header.checksum = SWAP16(udp_header.checksum);
+
+    // For uplink packet, assign the upper layer protocol based on the dst port.
+    switch (udp_header.dst_port)
+    {
+        case PORT_DNS:
+            print_dns_info(udp_pkt + sizeof(PcapUDPHeader));
+            break;
+        default:
+            break;
+    }
+
+    // For downlink packet, assign the upper layer protocol based on the src port.
+    switch (udp_header.src_port)
+    {
+        case PORT_DNS:
+            print_dns_info(udp_pkt + sizeof(PcapUDPHeader));
+            break;
+        default:
+            break;
+    }
 
     // Format the description info.
     char8_t buffer[50];

@@ -34,6 +34,7 @@ size_t parse_pcap(const char8_t* file_path, vector<vector<string>>& pkt_info_vec
         }
 
         fread(buffer, pkt_header->cap_len, 1, fp);
+
         vector<string> cur_pkt_info;
         // Parse different link types, respectively.
         switch (pcap_header.link_type) {
@@ -44,19 +45,12 @@ size_t parse_pcap(const char8_t* file_path, vector<vector<string>>& pkt_info_vec
                 break;
         }
 
-        /* 暂时用，测试完了删除一下代码 */
-        if (!cur_pkt_info.empty()) {
-            for (auto iter: cur_pkt_info) {
-                cout << iter << '\t';
-            }
-            cout << endl;
-        }
-        /* ========================= */
-
         free(buffer);
+        buffer = nullptr;
     }
 
     free(pkt_header);
+    pkt_header = nullptr;
     fclose(fp);
 
     return pkt_info_vec.size();

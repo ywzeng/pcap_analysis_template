@@ -5,7 +5,7 @@ vector<string> parse_ethernet_pkt(char8_t *ethernet_pkt)
     PcapEthernetHeader eth_header;
     memcpy(&eth_header, ethernet_pkt, sizeof(PcapEthernetHeader));
     // Modify the byte order.
-    eth_header.ether_type = (eth_header.ether_type << 8) | (eth_header.ether_type >> 8);
+    eth_header.ether_type = SWAP16(eth_header.ether_type);
 
     vector<string> ether_pkt_info;
     switch (eth_header.ether_type)
@@ -35,9 +35,9 @@ vector<string> parse_arp_pkt(char8_t *arp_pkt)
     PcapARPPacket arp_msg;
     memcpy(&arp_msg, arp_pkt, sizeof(PcapARPPacket));
     // Modify the byte order.
-    arp_msg.hardware_type = (arp_msg.hardware_type << 8) | (arp_msg.hardware_type >> 8);
-    arp_msg.protocol_type = (arp_msg.protocol_type << 8) | (arp_msg.protocol_type >> 8);
-    arp_msg.opcode = (arp_msg.opcode << 8) | (arp_msg.opcode >> 8);
+    arp_msg.hardware_type = SWAP16(arp_msg.hardware_type);
+    arp_msg.protocol_type = SWAP16(arp_msg.protocol_type);
+    arp_msg.opcode = SWAP16(arp_msg.opcode);
     
     // Extract ARP packet data
     vector<string> temp_vec;
@@ -87,8 +87,8 @@ vector<string> parse_vlan_pkt(char8_t *vlan_pkt)
     PcapVlanHeader vlan_header;
     memcpy(&vlan_header, vlan_pkt, sizeof(PcapVlanHeader));
     // Modify the byte order.
-    vlan_header.tag_control_info = (vlan_header.tag_control_info << 8) | (vlan_header.tag_control_info >> 8);
-    vlan_header.protocol_type = (vlan_header.protocol_type << 8) | (vlan_header.protocol_type >> 8);
+    vlan_header.tag_control_info = SWAP16(vlan_header.tag_control_info);
+    vlan_header.protocol_type = SWAP16(vlan_header.protocol_type);
 
     vector<string> vlan_pkt_info;
     switch (vlan_header.protocol_type)
