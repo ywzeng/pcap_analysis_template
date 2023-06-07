@@ -23,7 +23,26 @@ string parse_tcp_pkt(char8_t *tcp_pkt)
     p_tcp_header->checksum = SWAP16(p_tcp_header->checksum);
     p_tcp_header->urg_ptr = SWAP16(p_tcp_header->urg_ptr);
 
-    // Form the TCP description info, including src_port, dst_port, flags.
+    // For uplink packet, assign the upper layer protocol based on the dst port.
+    switch (p_tcp_header->dst_port)
+    {
+        case PORT_DNS:
+            print_dns_info(tcp_pkt + hl_byte);
+            break;
+        default:
+            break;
+    }
+    // For downlink packet, assign the upper layer protocol based on the src port.
+    switch (p_tcp_header->src_port)
+    {
+        case PORT_DNS:
+            print_dns_info(tcp_pkt + hl_byte);
+            break;
+        default:
+            break;
+    }
+
+    // Form the TCP description info, including src_port, dst_port, flags, and upper-layer protocol info.
     // Get the flags.
     vector<string> flag_vec;
     vector<uint16_t> candidate_flags = {TCP_FLAG_FIN, TCP_FLAG_SYN, TCP_FLAG_RST, TCP_FLAG_PSH, TCP_FLAG_ACK, 
@@ -39,8 +58,8 @@ string parse_tcp_pkt(char8_t *tcp_pkt)
     string flags_str;
     join(flag_vec, flags_str, ",");
 
-    // Format the description info.
-    char8_t buffer[50];
+    // Format the basic description info.
+    char8_t buffer[400];
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "%hu -> %hu [%s]", p_tcp_header->src_port, p_tcp_header->dst_port, flags_str.c_str());
     string des_info(buffer);

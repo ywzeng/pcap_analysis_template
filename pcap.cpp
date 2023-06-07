@@ -45,6 +45,11 @@ size_t parse_pcap(const char8_t* file_path, vector<vector<string>>& pkt_info_vec
                 break;
         }
 
+        // Print the packet info.
+        string res;
+        join(cur_pkt_info, res, "\t");
+        cout << res << endl;
+
         free(buffer);
         buffer = nullptr;
     }
