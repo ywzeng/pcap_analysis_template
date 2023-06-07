@@ -20,6 +20,6 @@
 using std::vector;
 using std::string;
 
-void print_dns_info(char8_t* dns_pkt);
+string get_dns_info(char8_t* dns_pkt);
 
 #endif

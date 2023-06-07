@@ -23,24 +23,26 @@ string parse_tcp_pkt(char8_t *tcp_pkt)
     p_tcp_header->checksum = SWAP16(p_tcp_header->checksum);
     p_tcp_header->urg_ptr = SWAP16(p_tcp_header->urg_ptr);
 
-    // For uplink packet, assign the upper layer protocol based on the dst port.
-    switch (p_tcp_header->dst_port)
-    {
-        case PORT_DNS:
-            print_dns_info(tcp_pkt + hl_byte);
-            break;
-        default:
-            break;
-    }
-    // For downlink packet, assign the upper layer protocol based on the src port.
-    switch (p_tcp_header->src_port)
-    {
-        case PORT_DNS:
-            print_dns_info(tcp_pkt + hl_byte);
-            break;
-        default:
-            break;
-    }
+    // 暂时不知道怎么处理基于TCP的DNS报文，搁置这里
+    string upper_layer_des;
+    // // For uplink packet, assign the upper layer protocol based on the dst port.
+    // switch (p_tcp_header->dst_port)
+    // {
+    //     case PORT_DNS:
+    //         upper_layer_des = get_dns_info(tcp_pkt + hl_byte);
+    //         break;
+    //     default:
+    //         break;
+    // }
+    // // For downlink packet, assign the upper layer protocol based on the src port.
+    // switch (p_tcp_header->src_port)
+    // {
+    //     case PORT_DNS:
+    //         upper_layer_des = get_dns_info(tcp_pkt + hl_byte);
+    //         break;
+    //     default:
+    //         break;
+    // }
 
     // Form the TCP description info, including src_port, dst_port, flags, and upper-layer protocol info.
     // Get the flags.
@@ -59,10 +61,14 @@ string parse_tcp_pkt(char8_t *tcp_pkt)
     join(flag_vec, flags_str, ",");
 
     // Format the basic description info.
-    char8_t buffer[400];
+    char8_t buffer[500];
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "%hu -> %hu [%s]", p_tcp_header->src_port, p_tcp_header->dst_port, flags_str.c_str());
     string des_info(buffer);
+    
+    if (upper_layer_des.length() > 0) {
+        des_info += " " + upper_layer_des;
+    }
 
     free(p_tcp_header);
     p_tcp_header = nullptr;
@@ -80,31 +86,35 @@ string parse_udp_pkt(char8_t *udp_pkt)
     udp_header.len = SWAP16(udp_header.len);
     udp_header.checksum = SWAP16(udp_header.checksum);
 
+    string upper_layer_des;
     // For uplink packet, assign the upper layer protocol based on the dst port.
     switch (udp_header.dst_port)
     {
         case PORT_DNS:
-            print_dns_info(udp_pkt + sizeof(PcapUDPHeader));
+            upper_layer_des = get_dns_info(udp_pkt + sizeof(PcapUDPHeader));
             break;
         default:
             break;
     }
-
     // For downlink packet, assign the upper layer protocol based on the src port.
     switch (udp_header.src_port)
     {
         case PORT_DNS:
-            print_dns_info(udp_pkt + sizeof(PcapUDPHeader));
+            upper_layer_des = get_dns_info(udp_pkt + sizeof(PcapUDPHeader));
             break;
         default:
             break;
     }
 
     // Format the description info.
-    char8_t buffer[50];
+    char8_t buffer[500];
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "%hu -> %hu", udp_header.src_port, udp_header.dst_port);
     string des_info(buffer);
+
+    if (upper_layer_des.length() > 0) {
+        des_info += " " + upper_layer_des;
+    }
 
     return des_info;
 }

@@ -23,6 +23,7 @@ size_t parse_pcap(const char8_t* file_path, vector<vector<string>>& pkt_info_vec
     }
 
     // Read packets.
+    uint32_t pkt_idx = 1;
     PcapPktHeader *pkt_header = nullptr;
     pkt_header = (PcapPktHeader*)malloc(sizeof(PcapPktHeader));
     while (fread(pkt_header, sizeof(PcapPktHeader), 1, fp)) {
@@ -48,7 +49,7 @@ size_t parse_pcap(const char8_t* file_path, vector<vector<string>>& pkt_info_vec
         // Print the packet info.
         string res;
         join(cur_pkt_info, res, "\t");
-        cout << res << endl;
+        cout << pkt_idx++ << " => " << res << endl;
 
         free(buffer);
         buffer = nullptr;
