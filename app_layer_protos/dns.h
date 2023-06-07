@@ -148,6 +148,6 @@ void free_question_section(vector<PcapDNSQuestion>& dns_question_list);
 void free_rr_section(vector<PcapDNSRR>& dns_rr_list);
 void get_question_section_info(char8_t* dns_pkt, uint16_t& offset, PcapDNSQuestion& cur_ques_sec);
 void get_rr_section_info(char8_t* dns_pkt, uint16_t& offset, PcapDNSRR& cur_rr_sec);
-void parse_dns_pkt(char8_t* dns_pkt);
+string parse_dns_pkt(char8_t* dns_pkt);
 
 #endif

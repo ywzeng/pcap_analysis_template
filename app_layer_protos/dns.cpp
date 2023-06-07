@@ -154,7 +154,7 @@ void get_rr_section_info(char8_t* dns_pkt, uint16_t& offset, PcapDNSRR& cur_rr_s
     offset += cur_rr_sec.rd_len;
 }
 
-void parse_dns_pkt(char8_t* dns_pkt)
+string parse_dns_pkt(char8_t* dns_pkt)
 {
     PcapDNSHeader dns_header;
     memcpy(&dns_header, dns_pkt, sizeof(PcapDNSHeader));
@@ -178,8 +178,8 @@ void parse_dns_pkt(char8_t* dns_pkt)
         is_nxdomain = true;
     }
 
-    printf("---- ID: 0x%04x ---- Query: %d ---- Answer: %d ---- Authority: %d ---- Additional: %d ----\n", 
-            dns_header.trans_id, dns_header.qd_cnt, dns_header.an_cnt, dns_header.ns_cnt, dns_header.ar_cnt);
+    // printf("---- ID: 0x%04x ---- Query: %d ---- Answer: %d ---- Authority: %d ---- Additional: %d ----\n", 
+    //         dns_header.trans_id, dns_header.qd_cnt, dns_header.an_cnt, dns_header.ns_cnt, dns_header.ar_cnt);
 
     // Assign the Question, Answer RR, Authority RR, and Additional RR sections based on the DNS header info, respectively.
     // Find the corresponding sections based on a cumulative offset.
@@ -191,7 +191,7 @@ void parse_dns_pkt(char8_t* dns_pkt)
         get_question_section_info(dns_pkt, offset, cur_ques_sec);
         dns_question_list[i] = cur_ques_sec;
 
-        printf("Query - %d: %s, %d, 0x%04x\n", i, cur_ques_sec.name, cur_ques_sec.qtype, cur_ques_sec.qclass);
+        // printf("Query - %d: %s, %d, 0x%04x\n", i, cur_ques_sec.name, cur_ques_sec.qtype, cur_ques_sec.qclass);
     }
 
     // Assign the Answer RR sections.
@@ -201,7 +201,7 @@ void parse_dns_pkt(char8_t* dns_pkt)
         get_rr_section_info(dns_pkt, offset, cur_ans_sec);
         dns_answer_list[i] = cur_ans_sec;
 
-        printf("Answer - %d: %s, %d, 0x%04x, %d, %d\n", i, cur_ans_sec.name, cur_ans_sec.rr_type, cur_ans_sec.rr_class, cur_ans_sec.ttl, cur_ans_sec.rd_len);
+        // printf("Answer - %d: %s, %d, 0x%04x, %d, %d\n", i, cur_ans_sec.name, cur_ans_sec.rr_type, cur_ans_sec.rr_class, cur_ans_sec.ttl, cur_ans_sec.rd_len);
     }
 
     // Assign the Authority RR sections.
@@ -211,7 +211,7 @@ void parse_dns_pkt(char8_t* dns_pkt)
         get_rr_section_info(dns_pkt, offset, cur_auth_sec);
         dns_authority_list[i] = cur_auth_sec;
 
-        printf("Authority - %d: %s\n", i, cur_auth_sec.name);
+        // printf("Authority - %d: %s\n", i, cur_auth_sec.name);
     }
 
     // Assign the Additional RR sections.
@@ -221,12 +221,31 @@ void parse_dns_pkt(char8_t* dns_pkt)
         get_rr_section_info(dns_pkt, offset, cur_add_sec);
         dns_additional_list[i] = cur_add_sec;
 
-        printf("Additional - %d: %s\n", i, cur_add_sec.name);
+        // printf("Additional - %d: %s\n", i, cur_add_sec.name);
     }
+
+    char8_t buffer[300];
+    memset(buffer, '\0', sizeof(buffer));
+    string query_flag;
+    if (is_query) {
+        query_flag = "DNS Query";
+        snprintf(buffer, sizeof(buffer), "%s \t QueryNum: %hu", query_flag.c_str(), dns_header.qd_cnt);
+    } else {
+        query_flag = "DNS Reponse";
+        if (is_nxdomain) {
+            string nxd_info = "NXDomain";
+            snprintf(buffer, sizeof(buffer), "%s %s", query_flag.c_str(), nxd_info.c_str());
+        } else {
+            snprintf(buffer, sizeof(buffer), "%s QueryNum: %hu, AnswerNum: %hu, NSNum: %hu, AdditionalNum: %hu", query_flag.c_str(), dns_header.qd_cnt, dns_header.an_cnt, dns_header.ns_cnt, dns_header.ar_cnt);
+        }
+    }
+    string des_info(buffer);
 
     // Free the allocated domain momery.
     free_question_section(dns_question_list);
     free_rr_section(dns_answer_list);
     free_rr_section(dns_authority_list);
     free_rr_section(dns_additional_list);
+
+    return des_info;
 }
