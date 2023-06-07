@@ -21,8 +21,8 @@ using std::vector;
 using std::string;
 
 // DNS flags. More RCODEs need to be complemented.
-#define DNS_FLAG_QR_Q      0x8000
-#define DNS_FLAG_QR_R      0x0000
+#define DNS_FLAG_QR_R      0x8000
+#define DNS_FLAG_QR_Q      0x0000
 #define DNS_FLAG_OP_SQUERY 0x0000
 #define DNS_FLAG_OP_IQUERY 0x0800
 #define DNS_FLAG_OP_STATUS 0x1000

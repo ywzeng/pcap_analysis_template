@@ -169,10 +169,10 @@ string parse_dns_pkt(char8_t* dns_pkt)
 
     // Identify the flags.
     // test, 暂时只识别方向和是否是nxdomain
-    bool is_query = false;
+    bool is_query = true;
     bool is_nxdomain = false;
-    if ((dns_header.flags & DNS_FLAG_QR_Q) == DNS_FLAG_QR_Q) {
-        is_query = true;
+    if ((dns_header.flags & DNS_FLAG_QR_R) == DNS_FLAG_QR_R) {
+        is_query = false;
     }
     if (!is_query && (dns_header.flags & DNS_RCODE_NXDOMAIN) == DNS_RCODE_NXDOMAIN) {
         is_nxdomain = true;
@@ -228,15 +228,15 @@ string parse_dns_pkt(char8_t* dns_pkt)
     memset(buffer, '\0', sizeof(buffer));
     string query_flag;
     if (is_query) {
-        query_flag = "DNS Query";
-        snprintf(buffer, sizeof(buffer), "%s \t QueryNum: %hu", query_flag.c_str(), dns_header.qd_cnt);
+        query_flag = "DNS Query  ";
+        snprintf(buffer, sizeof(buffer), "[%s %s QueryNum: %hu]", query_flag.c_str(), dns_question_list[0].name, dns_header.qd_cnt);
     } else {
         query_flag = "DNS Reponse";
         if (is_nxdomain) {
             string nxd_info = "NXDomain";
-            snprintf(buffer, sizeof(buffer), "%s %s", query_flag.c_str(), nxd_info.c_str());
+            snprintf(buffer, sizeof(buffer), "[%s %s]", query_flag.c_str(), nxd_info.c_str());
         } else {
-            snprintf(buffer, sizeof(buffer), "%s QueryNum: %hu, AnswerNum: %hu, NSNum: %hu, AdditionalNum: %hu", query_flag.c_str(), dns_header.qd_cnt, dns_header.an_cnt, dns_header.ns_cnt, dns_header.ar_cnt);
+            snprintf(buffer, sizeof(buffer), "[%s %s QueryNum: %hu, AnsNum: %hu, NSNum: %hu, AddNum: %hu]", query_flag.c_str(), dns_question_list[0].name, dns_header.qd_cnt, dns_header.an_cnt, dns_header.ns_cnt, dns_header.ar_cnt);
         }
     }
     string des_info(buffer);
